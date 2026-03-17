@@ -4,27 +4,46 @@
   gather_facts: false
 
   vars:
-    host_ip: 
-    hostname:
+    host_ip:
+    hostname: web01.aroque.com.br
 
     dns_server: "192.168.100.11"
     dns_zone: "aroque.com.br"
     dns_reverse_zone: "100.168.192.in-addr.arpa"
     dns_key_name: "ansible-key"
-    dns_key_secret: 
+    dns_key_secret: "CYCFJi8rHOu9JIU0YYvbLVS4vfO+X5PzLTeLshv2PTQ="
     dns_key_algorithm: "hmac-sha256"
 
   collections:
     - community.general
 
   tasks:
+
+    - name: Resolver hostname (DNS direto)
+      ansible.builtin.set_fact:
+        resolved_ip: "{{ lookup('community.general.dig', hostname, '@' + dns_server) }}"
+
+    - name: Validar resolução direta
+      ansible.builtin.debug:
+        msg: "Hostname {{ hostname | default('') }} resolvido para {{ resolved_ip | default('N/A') }}"
+
+    - name: Resolver IP (DNS reverso)
+      ansible.builtin.command: "dig -x {{ host_ip | default(resolved_ip, true) }} @{{ dns_server }} +short"
+      register: dig_reverse_result
+      changed_when: false
+      failed_when: false
+
+    - name: Validar resolução reversa
+      ansible.builtin.debug:
+        msg: "IP {{ host_ip | default('') }} resolvido para {{ dig_reverse_result.stdout | default('N/A') | trim }}"
+
     - name: Remover registro A do DNS
       community.general.nsupdate:
         server: "{{ dns_server }}"
         zone: "{{ dns_zone }}"
         record: "{{ hostname.split('.')[0] }}"
         type: A
-        value: "{{ host_ip }}"
+        value: "{{ host_ip | default(resolved_ip, true) }}"
         ttl: 300
         key_name: "{{ dns_key_name }}"
         key_secret: "{{ dns_key_secret }}"
@@ -35,7 +54,7 @@
       community.general.nsupdate:
         server: "{{ dns_server }}"
         zone: "{{ dns_reverse_zone }}"
-        record: "{{ host_ip.split('.')[-1] }}"
+        record: "{{ (host_ip | default(resolved_ip, true)).split('.')[-1] }}.{{ dns_reverse_zone }}"
         type: PTR
         value: "{{ hostname.split('.')[0] }}"
         ttl: 300
