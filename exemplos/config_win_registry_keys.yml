@@ -1,0 +1,19 @@
+---
+- name: Install software using Chocolatey
+  hosts: windows
+  
+  tasks:
+
+    - name: Set registry key to disable automatic updates
+      ansible.windows.win_regedit:
+        path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU
+        name: NoAutoUpdate
+        value: 1
+        type: dword
+        state: present
+
+    - name: Set Windows Update service to manual
+      ansible.windows.win_service:
+        name: wuauserv
+        start_mode: manual
+        state: stopped

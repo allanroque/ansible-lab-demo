@@ -1,0 +1,45 @@
+---
+- name: Construir inventário dinâmico baseado em variável
+  hosts: localhost
+  gather_facts: false
+  vars:
+    lista_de_hosts1:
+      - { name: "roque.roque", ip: "192.168.100.26" }
+      - { name: "allan", ip: "192.168.0.102" }
+    lista_de_hosts2:
+      - { name: "roque.example.com", ip: "192.168.100.26" }
+      - { name: "allan.example.com", ip: "192.168.0.102" }
+
+  tasks:
+    - name: Criar grupo dinâmico no inventário lista1
+      add_host:
+        name: "{{ item.name }}"
+        ansible_host: "{{ item.ip }}"
+        groups: grupo_dinamico
+      loop: "{{ lista_de_hosts1 }}"
+
+    - name: Criar grupo dinâmico no inventário lista2
+      add_host:
+        name: "{{ item.name }}"
+        ansible_host: "{{ item.ip }}"
+        groups: grupo_dinamico
+      loop: "{{ lista_de_hosts2 }}"
+
+- name: Executar tarefas nos hosts dinâmicos
+  hosts: grupo_dinamico
+  gather_facts: false
+  tasks:
+    - name: Mostrar hostname e IP
+      debug:
+        msg: "Executando em {{ inventory_hostname }} com IP {{ ansible_host }}"
+
+    - name: Testar conectividade com ping
+      ansible.builtin.ping:
+      ignore_errors: true
+      register: resultado_ping
+
+    - name: Mostrar resultado do ping
+      debug:
+        msg: >
+          Resultado para {{ inventory_hostname }}:
+          {{ 'SUCESSO' if resultado_ping.ping is defined else 'FALHA' }}
