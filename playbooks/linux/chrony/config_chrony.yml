@@ -1,7 +1,8 @@
 ---
 - name: Configuração do chrony
-  hosts: linux
+  hosts: all
   become: true
+  ignore_unreachable: true
   gather_facts: false
 
   vars:
