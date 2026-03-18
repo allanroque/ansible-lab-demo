@@ -5,7 +5,7 @@
 
   vars:
     host_ip:
-    hostname:
+    host_name:
 
     dns_server: "192.168.100.11"
     dns_zone: "aroque.com.br"
@@ -22,7 +22,7 @@
       community.general.nsupdate:
         server: "{{ dns_server }}"
         zone: "{{ dns_zone }}"
-        record: "{{ hostname.split('.')[0] }}"
+        record: "{{ host_name.split('.')[0] }}"
         type: A
         value: "{{ host_ip }}"
         ttl: 300
@@ -34,9 +34,9 @@
       community.general.nsupdate:
         server: "{{ dns_server }}"
         zone: "{{ dns_reverse_zone }}"
-        record: "{{ host_ip.split('.')[-1] }}"
+        record: "{{ host_ip.split('.')[-1] }}.{{ dns_reverse_zone }}"
         type: PTR
-        value:  "{{ hostname }}."
+        value:  "{{ host_name }}."
         ttl: 300
         key_name: "{{ dns_key_name }}"
         key_secret: "{{ dns_key_secret }}"
@@ -46,12 +46,13 @@
       ansible.builtin.debug:
         var: host_ip
 
-    - name: Debug variable hostname
+    - name: Debug variable host_name
       ansible.builtin.debug:
-        var: hostname
+        var: host_name
 
     - name: Export host_ip to another job template
       ansible.builtin.set_stats:
         data:
           host_ip: "{{ host_ip }}"
-          hostname: "{{ hostname }}"
+          host_name: "{{ host_name }}"
+          hostname: "{{ host_name }}"

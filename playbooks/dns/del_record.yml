@@ -5,7 +5,7 @@
 
   vars:
     host_ip:
-    hostname: web01.aroque.com.br
+    host_name: web01.aroque.com.br
 
     dns_server: "192.168.100.11"
     dns_zone: "aroque.com.br"
@@ -19,24 +19,24 @@
 
   tasks:
 
-    - name: Resolver hostname (DNS direto)
+    - name: Resolver host_name (DNS direto)
       ansible.builtin.set_fact:
-        resolved_ip: "{{ lookup('community.general.dig', hostname, '@' + dns_server) }}"
+        resolved_ip: "{{ lookup('community.general.dig', host_name, '@' + dns_server) }}"
 
     - name: Validar resolução direta
       ansible.builtin.debug:
-        msg: "Hostname {{ hostname | default('') }} resolvido para {{ resolved_ip | default('N/A') }}"
+        msg: "Hostname {{ host_name | default('') }} resolvido para {{ resolved_ip | default('N/A') }}"
 
-    - name: Resolver hostname (DNS direto)
+    - name: Definir host_ip a partir do DNS (quando não informado)
       ansible.builtin.set_fact:
-        host_ip: "{{ lookup('community.general.dig', hostname, '@' + dns_server) }}"
+        host_ip: "{{ resolved_ip }}"
       when: host_ip is not defined or host_ip == none or host_ip == ""
 
-#    - name: Resolver IP (DNS reverso)
-#      ansible.builtin.command: "dig -x {{ host_ip | default(resolved_ip, true) }} @{{ dns_server }} +short"
-#      register: dig_reverse_result
-#      changed_when: false
-#      failed_when: false
+    - name: Resolver IP (DNS reverso)
+      ansible.builtin.command: "dig -x {{ host_ip | default(resolved_ip, true) }} @{{ dns_server }} +short"
+      register: dig_reverse_result
+      changed_when: false
+      failed_when: false
 
     - name: Validar resolução reversa
       ansible.builtin.debug:
@@ -46,7 +46,7 @@
       community.general.nsupdate:
         server: "{{ dns_server }}"
         zone: "{{ dns_zone }}"
-        record: "{{ hostname.split('.')[0] }}"
+        record: "{{ host_name.split('.')[0] }}"
         type: A
         value: "{{ host_ip | default(resolved_ip, true) }}"
         ttl: 300
@@ -61,7 +61,7 @@
         zone: "{{ dns_reverse_zone }}"
         record: "{{ (host_ip | default(resolved_ip, true)).split('.')[-1] }}.{{ dns_reverse_zone }}"
         type: PTR
-        value: "{{ hostname.split('.')[0] }}"
+        value: "{{ host_name.split('.')[0] }}"
         ttl: 300
         key_name: "{{ dns_key_name }}"
         key_secret: "{{ dns_key_secret }}"
@@ -72,13 +72,14 @@
       ansible.builtin.debug:
         var: host_ip
 
-    - name: Debug variable hostname
+    - name: Debug variable host_name
       ansible.builtin.debug:
-        var: hostname
+        var: host_name
 
     - name: Export host_ip to another job template
       ansible.builtin.set_stats:
         data:
           host_ip: "{{ host_ip }}"
-          hostname: "{{ hostname }}"
+          host_name: "{{ host_name }}"
+          hostname: "{{ host_name }}"
 

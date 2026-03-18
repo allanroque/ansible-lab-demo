@@ -5,20 +5,20 @@
 
   vars:
     dns_server: "192.168.100.11"
-    hostname: "web02.aroque.com.br"
+    host_name: "web02.aroque.com.br"
 
   tasks:
     - name: Resolver hostname (DNS direto)
       ansible.builtin.set_fact:
-        resolved_ip: "{{ lookup('community.general.dig', hostname, '@' + dns_server) }}"
+        resolved_ip: "{{ lookup('community.general.dig', host_name, '@' + dns_server) }}"
 
     - name: Exibir resultado da resolução direta
       ansible.builtin.debug:
-        msg: "Hostname {{ hostname }} resolvido para '{{ resolved_ip }}'"
+        msg: "Hostname {{ host_name }} resolvido para '{{ resolved_ip }}'"
 
     - name: Marcar falha se DNS direto não resolver
       ansible.builtin.fail:
-        msg: "DNS NÃO resolveu o hostname {{ hostname }} no servidor {{ dns_server }}"
+        msg: "DNS NÃO resolveu o hostname {{ host_name }} no servidor {{ dns_server }}"
       when: resolved_ip | trim == ""
 
     - name: Resolver IP (DNS reverso)
