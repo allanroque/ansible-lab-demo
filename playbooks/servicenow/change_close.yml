@@ -15,7 +15,7 @@
       servicenow.itsm.change_request:
         state: closed
         instance:
-          host: "{{ snow_instance }}"
+          host: "{{ snow_host }}"
           username: "{{ snow_username }}"
           password: "{{ snow_password }}"
         number: "{{ sn_change_request_number }}"

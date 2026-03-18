@@ -12,7 +12,6 @@
     sn_category_value: "network"
 
   tasks:
-
 #    - name: DEBUG credential injection
 #      ansible.builtin.debug:
 #        msg: "{{ lookup('env', 'snow_username') }}"
