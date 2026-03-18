@@ -4,13 +4,17 @@
   connection: local
   vars:
     # Entrada principal: número da change a ser fechada
-    sn_change_request_number: "{{ sn_change_request_number }}"
+#    sn_change_request_number: "{{ sn_change_request_number }}"
     sn_closure_code: "successful"
     sn_closure_notes: "Change successfully implemented - Job ID: {{ awx_job_id | default('0') }}"
   collections:
     - servicenow.itsm
 
   tasks:
+    - name: DEBUG input
+      debug:
+        var: sn_change_request_number
+
     - name: Close change request
       servicenow.itsm.change_request:
         state: closed
