@@ -3,7 +3,7 @@
 - name: Deploy Apache Web Server to RHEL 9
   hosts: all
   become: true
-  gather_facts: false
+  gather_facts: true
 
   vars:
     apache_test_message: "Apache Test Message"
