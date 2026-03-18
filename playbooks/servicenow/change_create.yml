@@ -12,25 +12,13 @@
     sn_category_value: "network"
 
   tasks:
-    - name: Debug env vars
-      ansible.builtin.debug:
-        msg:
-          - "host={{ lookup('env', 'SN_HOST') | default('EMPTY') }}"
-          - "user={{ lookup('env', 'SN_USERNAME') | default('EMPTY') }}"
-          - "password={{ lookup('env', 'SN_PASSWORD') | default('EMPTY') }}"
-
-    - name: Dump all env vars
-      ansible.builtin.debug:
-        msg:
-          - "{{ ansible_env }}"
-
     - name: Create change request
       servicenow.itsm.change_request:
         state: present
         instance:
-          host: "{{ lookup('env', 'SN_HOST') }}"
-          username: "{{ lookup('env', 'SN_USERNAME') }}"
-          password: "{{ lookup('env', 'SN_PASSWORD') }}"
+          host: "{{ SN_HOST }}"
+          username: "{{ SN_USERNAME }}"
+          password: "{{ SN_PASSWORD }}"
         short_description: "{{ sn_short_description }}"
         description: "{{ sn_description }}"
         impact: "{{ sn_impact_value }}"
