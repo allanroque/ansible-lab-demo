@@ -13,9 +13,9 @@
 
   tasks:
 
-    - name: DEBUG credential injection
-      ansible.builtin.debug:
-        msg: "{{ lookup('env', 'snow_username') }}"
+#    - name: DEBUG credential injection
+#      ansible.builtin.debug:
+#        msg: "{{ lookup('env', 'snow_username') }}"
 
     - name: Create change request
       servicenow.itsm.change_request:
