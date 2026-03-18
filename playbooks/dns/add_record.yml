@@ -4,14 +4,14 @@
   gather_facts: false
 
   vars:
-    host_ip:
-    host_name:
+    host_ip: 192.168.100.51
+    host_name: web01.aroque.com.br
 
     dns_server: "192.168.100.11"
     dns_zone: "aroque.com.br"
     dns_reverse_zone: "100.168.192.in-addr.arpa"
     dns_key_name: "ansible-key"
-    dns_key_secret: 
+    dns_key_secret: ""
     dns_key_algorithm: "hmac-sha256"
 
   collections:
