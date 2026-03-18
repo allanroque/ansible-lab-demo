@@ -19,6 +19,11 @@
           - "user={{ lookup('env', 'SN_USERNAME') | default('EMPTY') }}"
           - "password={{ lookup('env', 'SN_PASSWORD') | default('EMPTY') }}"
 
+    - name: Dump all env vars
+      ansible.builtin.debug:
+        msg:
+          - "{{ ansible_env }}"
+
     - name: Create change request
       servicenow.itsm.change_request:
         state: present
