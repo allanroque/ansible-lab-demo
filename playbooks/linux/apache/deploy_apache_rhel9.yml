@@ -1,87 +1,83 @@
 ---
 # tasks file for deploy_webserver_apache
----
 - name: Deploy Apache Web Server to RHEL 9
   hosts: all
   become: true
   gather_facts: false
-vars:
-  apache_test_message: "Apache Test Message"
 
-# Instala a versão mais recente do Apache
-- name: latest Apache version installed
-  yum:
-    name: httpd
-    state: latest
+  vars:
+    apache_test_message: "Apache Test Message"
+    http_url: "http://{{ ansible_fqdn | default(inventory_hostname) }}"
 
-# Instala a versão mais recente do firewalld
-- name: latest firewalld version installed
-  yum:
-    name: firewalld
-    state: latest
+  tasks:
+    - name: latest Apache version installed
+      ansible.builtin.yum:
+        name: httpd
+        state: latest
 
-# Ativa e inicia o firewalld
-- name: firewalld enabled and running
-  service:
-    name: firewalld
-    enabled: true
-    state: started
+    - name: latest firewalld version installed
+      ansible.builtin.yum:
+        name: firewalld
+        state: latest
 
-# Permite o serviço HTTP no firewalld
-- name: firewalld permits http service
-  firewalld:
-    service: http
-    permanent: true
-    state: enabled
-    immediate: yes
+    - name: firewalld enabled and running
+      ansible.builtin.service:
+        name: firewalld
+        enabled: true
+        state: started
 
-# Copia a configuração customizada do Apache
-- name: Ensure proper Apache configuration
-  copy:
-    src: httpd.conf
-    dest: /etc/httpd/conf/httpd.conf
-  notify: apache-restart
+    - name: firewalld permits http service
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
 
-# Copia o logo para o site
-- name: Ensure proper Apache configuration
-  copy:
-    src: logo-rh-ansible-automation.png
-    dest: /var/www/html/logo-rh-ansible-automation.png
+    - name: Ensure proper Apache configuration (httpd.conf)
+      ansible.builtin.copy:
+        src: httpd.conf
+        dest: /etc/httpd/conf/httpd.conf
+      notify: apache-restart
 
-# Implanta o index.html a partir de template
-- name: deploy index.html
-  template:
-    src: index.html.j2
-    dest: /var/www/html/index.html
-  notify: apache-restart
+    - name: Ensure Apache logo in web root
+      ansible.builtin.copy:
+        src: logo-rh-ansible-automation.png
+        dest: /var/www/html/logo-rh-ansible-automation.png
 
-# Inicia o serviço Apache
-- name: Apache enabled and running
-  service:
-    name: httpd
-    enabled: true
-    state: started
+    - name: deploy index.html
+      ansible.builtin.template:
+        src: index.html.j2
+        dest: /var/www/html/index.html
+      notify: apache-restart
 
-# Verifica se a página inicial está acessível
-- name: Test page link
-  uri:
-    url: "http://{{ ansible_fqdn}}"
-    return_content: no
-    status_code: 200
-  register: result
+    - name: Apache enabled and running
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
 
-# Exibe o código de status retornado pela URL
-- name: Display result
-  debug:
-    msg: "O retorno do link foi {{ result.status }}"
+    - name: Test page link
+      ansible.builtin.uri:
+        url: "{{ http_url }}"
+        return_content: false
+        status_code: 200
+      register: result
 
-# Fails the play if return code is not 200
-- name: Fail if return code is not 200
-  fail:
-    msg: "HTTP return code is not 200"
-  when: result.status != 200
+    - name: Display result
+      ansible.builtin.debug:
+        msg: "O retorno do link foi {{ result.status }}"
 
-# Exibe o link da página
-- name: Access page
-  debug:
-    msg: "http://{{ ansible_fqdn}}"
+    - name: Fail if return code is not 200
+      ansible.builtin.fail:
+        msg: "HTTP return code is not 200"
+      when: result.status != 200
+
+    - name: Access page
+      ansible.builtin.debug:
+        msg: "{{ http_url }}"
+
+  handlers:
+    - name: apache-restart
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
