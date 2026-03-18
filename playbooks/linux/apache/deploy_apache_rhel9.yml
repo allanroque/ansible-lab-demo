@@ -1,0 +1,87 @@
+---
+# tasks file for deploy_webserver_apache
+---
+- name: Deploy Apache Web Server to RHEL 9
+  hosts: all
+  become: true
+  gather_facts: false
+vars:
+  apache_test_message: "Apache Test Message"
+
+# Instala a versão mais recente do Apache
+- name: latest Apache version installed
+  yum:
+    name: httpd
+    state: latest
+
+# Instala a versão mais recente do firewalld
+- name: latest firewalld version installed
+  yum:
+    name: firewalld
+    state: latest
+
+# Ativa e inicia o firewalld
+- name: firewalld enabled and running
+  service:
+    name: firewalld
+    enabled: true
+    state: started
+
+# Permite o serviço HTTP no firewalld
+- name: firewalld permits http service
+  firewalld:
+    service: http
+    permanent: true
+    state: enabled
+    immediate: yes
+
+# Copia a configuração customizada do Apache
+- name: Ensure proper Apache configuration
+  copy:
+    src: httpd.conf
+    dest: /etc/httpd/conf/httpd.conf
+  notify: apache-restart
+
+# Copia o logo para o site
+- name: Ensure proper Apache configuration
+  copy:
+    src: logo-rh-ansible-automation.png
+    dest: /var/www/html/logo-rh-ansible-automation.png
+
+# Implanta o index.html a partir de template
+- name: deploy index.html
+  template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+  notify: apache-restart
+
+# Inicia o serviço Apache
+- name: Apache enabled and running
+  service:
+    name: httpd
+    enabled: true
+    state: started
+
+# Verifica se a página inicial está acessível
+- name: Test page link
+  uri:
+    url: "http://{{ ansible_fqdn}}"
+    return_content: no
+    status_code: 200
+  register: result
+
+# Exibe o código de status retornado pela URL
+- name: Display result
+  debug:
+    msg: "O retorno do link foi {{ result.status }}"
+
+# Fails the play if return code is not 200
+- name: Fail if return code is not 200
+  fail:
+    msg: "HTTP return code is not 200"
+  when: result.status != 200
+
+# Exibe o link da página
+- name: Access page
+  debug:
+    msg: "http://{{ ansible_fqdn}}"
