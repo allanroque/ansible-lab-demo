@@ -1,51 +1,37 @@
----
 - name: Automate SNOW - Change Request Create
   hosts: localhost
   connection: local
-  vars:
-    sn_short_description: "{{ job_sshort_description | default('Change Open Via Ansible') }}"
-    sn_description: "{{ job_description | default('Change Open Via Ansible') }}"
-    sn_impact: "low"
-    sn_urgency: "low"
-    sn_category: "network"
-
-    # Normalização: alguns workflows/surveys podem passar listas (ex.: ["valor"])
-    snow_instance_host: >-
-      {{ (snow_instance is iterable and snow_instance is not string) | ternary(snow_instance | first, snow_instance) }}
-    snow_username_value: >-
-      {{ (snow_username is iterable and snow_username is not string) | ternary(snow_username | first, snow_username) }}
-    snow_password_value: >-
-      {{ (snow_password is iterable and snow_password is not string) | ternary(snow_password | first, snow_password) }}
   collections:
     - servicenow.itsm
 
-  tasks:
+  vars:
+    sn_short_description: "Change Open Via Ansible"
+    sn_description: "Change Open Via Ansible"
+    sn_impact_value: "low"
+    sn_urgency_value: "low"
+    sn_category_value: "network"
 
-    - name: Debug variables
-      debug:
-        msg:
-          - "instance: {{ snow_instance_host }} (type={{ snow_instance_host | type_debug }})"
-          - "username: {{ snow_username_value }} (type={{ snow_username_value | type_debug }})"
-          - "password type: {{ snow_password_value | type_debug }}"
-   
+  tasks:
     - name: Create change request
       servicenow.itsm.change_request:
-        state: new
+        state: present   # 🔥 CORREÇÃO AQUI
         instance:
           host: "{{ snow_instance_host }}"
           username: "{{ snow_username_value }}"
           password: "{{ snow_password_value }}"
         short_description: "{{ sn_short_description }}"
         description: "{{ sn_description }}"
-        impact: "{{ sn_impact }}"
-        urgency: "{{ sn_urgency }}"
-        category: "{{ sn_category }}"
+        impact: "{{ sn_impact_value }}"
+        urgency: "{{ sn_urgency_value }}"
+        category: "{{ sn_category_value }}"
       register: new_change_request
 
-    - set_fact:
+    - name: Set change request number
+      set_fact:
         sn_change_request_number: "{{ new_change_request.record.number }}"
 
-    - debug:
+    - name: Debug change request number
+      ansible.builtin.debug:
         var: new_change_request.record.number
 
     - name: Set change request number
