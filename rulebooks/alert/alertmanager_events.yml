@@ -32,7 +32,7 @@
       action:
         run_job_template:
           name: "LINUX-CONFIG-SELINUX"
-          organization: SRE
+          organization: "SRE"
           job_args:
             limit: "{{ event.meta.hosts }}"   # Aplica apenas ao host do alerta
           extra_vars:
@@ -58,7 +58,7 @@
       action:
         run_workflow_template:
           name: "WF-SH-DISK-SPACE"
-          organization: SRE
+          organization: "SRE"
           job_args:
             limit: "{{ event.meta.hosts }}"
 
