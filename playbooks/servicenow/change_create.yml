@@ -15,10 +15,6 @@
     - name: Create change request
       servicenow.itsm.change_request:
         state: present
-        instance:
-          host: "{{ snow_instance }}"
-          username: "{{ snow_username }}"
-          password: "{{ snow_password }}"
         short_description: "{{ sn_short_description }}"
         description: "{{ sn_description }}"
         impact: "{{ sn_impact_value }}"
