@@ -57,7 +57,7 @@
       condition: event.alert.labels.alertname == "HighFilesystemUsage" and event.alert.status == "firing"
       action:
         run_workflow_template:
-          name: "SH - WF - Disk Space"
+          name: "WF-SH-DISK-SPACE"
           organization: ITOPS
           job_args:
             limit: "{{ event.meta.hosts }}"
