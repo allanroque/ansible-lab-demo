@@ -12,6 +12,26 @@
     sn_category_value: "network"
 
   tasks:
+    - name: DEBUG | Show raw variables
+      ansible.builtin.debug:
+        msg:
+        - "snow_instance={{ snow_instance | default('UNDEF') }}"
+        - "snow_username={{ snow_username | default('UNDEF') }}"
+        - "snow_password_type={{ snow_password | type_debug if snow_password is defined else 'UNDEF' }}"
+        - "sn_category_value={{ sn_category_value }}"
+        - "sn_impact_value={{ sn_impact_value }}"
+        - "sn_urgency_value={{ sn_urgency_value }}"
+
+    - name: DEBUG | Show variable types
+      ansible.builtin.debug:
+        msg:
+          - "snow_instance type={{ snow_instance | type_debug if snow_instance is defined else 'UNDEF' }}"
+          - "snow_username type={{ snow_username | type_debug if snow_username is defined else 'UNDEF' }}"
+          - "snow_password type={{ snow_password | type_debug if snow_password is defined else 'UNDEF' }}"
+          - "sn_category_value type={{ sn_category_value | type_debug }}"
+          - "sn_impact_value type={{ sn_impact_value | type_debug }}"
+          - "sn_urgency_value type={{ sn_urgency_value | type_debug }}"
+
     - name: Create change request
       servicenow.itsm.change_request:
         state: present   # 🔥 CORREÇÃO AQUI
