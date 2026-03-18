@@ -6,7 +6,7 @@
     # Entrada principal: número da change a ser fechada
     sn_change_request_number: "{{ sn_change_request_number }}"
     sn_closure_code: "successful"
-    sn_closure_notes: "Change successfully implemented - Job ID: {{ awx_job_id }}"
+    sn_closure_notes: "Change successfully implemented - Job ID: {{ awx_job_id | default('0') }}"
   collections:
     - servicenow.itsm
 

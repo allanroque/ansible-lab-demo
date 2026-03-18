@@ -12,6 +12,14 @@
     - servicenow.itsm
 
   tasks:
+
+    - name: Debug variables
+      debug:
+        msg:
+          - "instance: {{ snow_instance }} (type={{ snow_instance | type_debug }})"
+          - "username: {{ snow_username }} (type={{ snow_username | type_debug }})"
+          - "password: {{ snow_password | type_debug }}"
+   
     - name: Create change request
       servicenow.itsm.change_request:
         state: new
