@@ -16,9 +16,9 @@
       servicenow.itsm.change_request:
         state: present
         instance:
-          host: "{{ SN_HOST }}"
-          username: "{{ SN_USERNAME }}"
-          password: "{{ SN_PASSWORD }}"
+          host: "{{ snow_host }}"
+          username: "{{ snow_username }}"
+          password: "{{ snow_password }}"
         short_description: "{{ sn_short_description }}"
         description: "{{ sn_description }}"
         impact: "{{ sn_impact_value }}"
