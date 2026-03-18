@@ -31,7 +31,7 @@
       condition: event.alert.labels.alertname == "SELinuxDisabled" and event.alert.status == "firing"
       action:
         run_job_template:
-          name: "CONFIG - SELinux"
+          name: "LINUX-CONFIG-SELINUX"
           organization: ITOPS
           job_args:
             limit: "{{ event.meta.hosts }}"   # Aplica apenas ao host do alerta
