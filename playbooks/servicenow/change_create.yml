@@ -8,6 +8,14 @@
     sn_impact: "low"
     sn_urgency: "low"
     sn_category: "network"
+
+    # Normalização: alguns workflows/surveys podem passar listas (ex.: ["valor"])
+    snow_instance_host: >-
+      {{ (snow_instance is iterable and snow_instance is not string) | ternary(snow_instance | first, snow_instance) }}
+    snow_username_value: >-
+      {{ (snow_username is iterable and snow_username is not string) | ternary(snow_username | first, snow_username) }}
+    snow_password_value: >-
+      {{ (snow_password is iterable and snow_password is not string) | ternary(snow_password | first, snow_password) }}
   collections:
     - servicenow.itsm
 
@@ -16,17 +24,17 @@
     - name: Debug variables
       debug:
         msg:
-          - "instance: {{ snow_instance }} (type={{ snow_instance | type_debug }})"
-          - "username: {{ snow_username }} (type={{ snow_username | type_debug }})"
-          - "password: {{ snow_password | type_debug }}"
+          - "instance: {{ snow_instance_host }} (type={{ snow_instance_host | type_debug }})"
+          - "username: {{ snow_username_value }} (type={{ snow_username_value | type_debug }})"
+          - "password type: {{ snow_password_value | type_debug }}"
    
     - name: Create change request
       servicenow.itsm.change_request:
         state: new
         instance:
-          host: "{{ snow_instance }}"
-          username: "{{ snow_username }}"
-          password: "{{ snow_password }}"
+          host: "{{ snow_instance_host }}"
+          username: "{{ snow_username_value }}"
+          password: "{{ snow_password_value }}"
         short_description: "{{ sn_short_description }}"
         description: "{{ sn_description }}"
         impact: "{{ sn_impact }}"
