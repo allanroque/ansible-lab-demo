@@ -14,10 +14,10 @@
   tasks:
     - name: Debug env vars
       ansible.builtin.debug:
-      msg:
-        - "host={{ lookup('env', 'SN_HOST') | default('EMPTY') }}"
-        - "user={{ lookup('env', 'SN_USERNAME') | default('EMPTY') }}"
-        - "password={{ lookup('env', 'SN_PASSWORD') | default('EMPTY') }}"
+        msg:
+          - "host={{ lookup('env', 'SN_HOST') | default('EMPTY') }}"
+          - "user={{ lookup('env', 'SN_USERNAME') | default('EMPTY') }}"
+          - "password={{ lookup('env', 'SN_PASSWORD') | default('EMPTY') }}"
 
     - name: Create change request
       servicenow.itsm.change_request:
