@@ -12,6 +12,14 @@
     sn_category_value: "network"
 
   tasks:
+
+    - name: DEBUG credential injection
+      ansible.builtin.debug:
+        msg:
+          - "snow_host={{ snow_host | default('UNDEFINED') }}"
+          - "snow_username={{ snow_username | default('UNDEFINED') }}"
+          - "snow_password={{ snow_password | default('UNDEFINED') }}"
+
     - name: Create change request
       servicenow.itsm.change_request:
         state: present
