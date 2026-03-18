@@ -16,7 +16,7 @@
       servicenow.itsm.incident:
         state: new
         instance:
-          host: "{{ snow_instance }}"
+          host: "{{ snow_host }}"
           username: "{{ snow_username }}"
           password: "{{ snow_password }}"
         caller: "{{ lookup('env', 'SN_USERNAME') }}"
