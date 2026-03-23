@@ -11,7 +11,7 @@
     dns_zone: "aroque.com.br"
     dns_reverse_zone: "100.168.192.in-addr.arpa"
     dns_key_name: "ansible-key"
-    dns_key_secret: ""
+    dns_key_secret:
     dns_key_algorithm: "hmac-sha256"
 
   collections:
