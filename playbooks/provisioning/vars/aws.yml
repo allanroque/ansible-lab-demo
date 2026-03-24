@@ -1,0 +1,21 @@
+---
+# ==========================================================================
+# Instance variables (populated via AAP Survey)
+# ==========================================================================
+aws_name_tag: webserver
+aws_instance_size: t2.micro
+aws_instance_count: 1
+aws_region: us-east-2
+aws_server_role: webserver
+aws_server_group: webservers
+
+# ==========================================================================
+# SSH Public Key for instance access
+# ==========================================================================
+aws_instance_public_key:
+
+# ==========================================================================
+# S3 Backend for Terraform remote state
+# ==========================================================================
+s3_backend_key: "provisioning/{{ aws_name_tag }}/terraform.tfstate"
+s3_backend_region: "{{ aws_region }}"

@@ -1,0 +1,87 @@
+---
+# ============================================================================
+# Playbook: setup-s3-backend.yml
+# Creates S3 bucket and DynamoDB table for Terraform remote state backend
+# ============================================================================
+- name: Create Terraform S3 backend infrastructure
+  hosts: localhost
+  gather_facts: false
+  vars_files: vars/aws.yml
+
+  pre_tasks:
+    - name: Get AWS account ID
+      amazon.aws.aws_caller_info:
+      register: caller_info
+
+    - name: Set unique bucket and table names using account ID
+      ansible.builtin.set_fact:
+        s3_backend_bucket: "terraform-state-{{ aws_name_tag }}-{{ caller_info.account }}"
+        dynamodb_lock_table: "terraform-lock-{{ aws_name_tag }}-{{ caller_info.account }}"
+
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - s3_backend_bucket is defined
+          - s3_backend_bucket | length > 0
+          - s3_backend_key is defined
+          - s3_backend_region is defined
+          - dynamodb_lock_table is defined
+        fail_msg: >-
+          Missing required S3 backend variables. Check vars/aws.yml
+          or pass them via --extra-vars.
+
+  tasks:
+    # ========================================================================
+    # S3 Bucket for Terraform state
+    # ========================================================================
+    - name: Create S3 bucket for Terraform state
+      amazon.aws.s3_bucket:
+        name: "{{ s3_backend_bucket }}"
+        state: present
+        region: "{{ s3_backend_region }}"
+        versioning: true
+        encryption: AES256
+        public_access:
+          block_public_acls: true
+          block_public_policy: true
+          ignore_public_acls: true
+          restrict_public_buckets: true
+        tags:
+          Purpose: terraform-state
+          ManagedBy: ansible
+      register: s3_result
+
+    - name: Display S3 bucket info
+      ansible.builtin.debug:
+        msg: "S3 bucket '{{ s3_backend_bucket }}' ready in {{ s3_backend_region }}"
+
+    # ========================================================================
+    # DynamoDB table for state locking
+    # ========================================================================
+    - name: Create DynamoDB table for Terraform state locking
+      community.aws.dynamodb_table:
+        name: "{{ dynamodb_lock_table }}"
+        state: present
+        region: "{{ s3_backend_region }}"
+        billing_mode: PAY_PER_REQUEST
+        hash_key_name: LockID
+        hash_key_type: STRING
+        tags:
+          Purpose: terraform-lock
+          ManagedBy: ansible
+      register: dynamodb_result
+
+    - name: Display DynamoDB table info
+      ansible.builtin.debug:
+        msg: "DynamoDB table '{{ dynamodb_lock_table }}' ready for state locking"
+
+    # ========================================================================
+    # Export backend config via set_stats for AAP workflows
+    # ========================================================================
+    - name: Export S3 backend configuration for downstream job templates
+      ansible.builtin.set_stats:
+        data:
+          s3_backend_bucket: "{{ s3_backend_bucket }}"
+          s3_backend_key: "{{ s3_backend_key }}"
+          s3_backend_region: "{{ s3_backend_region }}"
+          dynamodb_lock_table: "{{ dynamodb_lock_table }}"

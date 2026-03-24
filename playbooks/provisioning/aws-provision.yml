@@ -1,0 +1,138 @@
+---
+# ============================================================================
+# Playbook: aws-provision.yml
+# Provisions AWS EC2 infrastructure using Terraform with S3 remote backend
+# Requires: setup-s3-backend.yml to have run first (or in AAP workflow)
+#
+# Variables (via Survey / extra-vars):
+#   - aws_name_tag             : Instance name tag
+#   - aws_instance_size        : Instance type (t2.micro, t3.medium, etc.)
+#   - aws_instance_public_key  : SSH public key for access
+#   - aws_region               : AWS region
+#   - aws_server_role          : Server role tag
+#   - aws_server_group         : Server group tag
+# ============================================================================
+- name: Provision AWS infrastructure with Terraform
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars/aws.yml
+
+  pre_tasks:
+    # ========================================================================
+    # Validate required variables
+    # ========================================================================
+    - name: Validate required provisioning variables
+      ansible.builtin.assert:
+        that:
+          - aws_name_tag is defined and aws_name_tag | length > 0
+          - aws_instance_size is defined
+          - aws_instance_public_key is defined and aws_instance_public_key | length > 0
+          - aws_region is defined
+          - aws_server_role is defined
+          - aws_server_group is defined
+        fail_msg: >-
+          Missing required provisioning variables. Ensure all variables are
+          defined in vars/aws.yml or passed via AAP Survey / --extra-vars.
+
+    # ========================================================================
+    # Resolve S3 backend naming
+    # ========================================================================
+    - name: Get AWS account ID for backend naming
+      amazon.aws.aws_caller_info:
+      register: caller_info
+
+    - name: Set S3 backend resource names
+      ansible.builtin.set_fact:
+        s3_backend_bucket: >-
+          {{ s3_backend_bucket | default('terraform-state-' + aws_name_tag + '-' + caller_info.account) }}
+        dynamodb_lock_table: >-
+          {{ dynamodb_lock_table | default('terraform-lock-' + aws_name_tag + '-' + caller_info.account) }}
+
+  tasks:
+    # ========================================================================
+    # Terraform Init with S3 backend
+    # ========================================================================
+    - name: Initialize Terraform with S3 backend
+      community.general.terraform:
+        project_path: "{{ playbook_dir }}/terraform"
+        state: present
+        force_init: true
+        backend_config:
+          bucket: "{{ s3_backend_bucket }}"
+          key: "{{ s3_backend_key }}"
+          region: "{{ s3_backend_region }}"
+          dynamodb_table: "{{ dynamodb_lock_table }}"
+          encrypt: "true"
+
+    # ========================================================================
+    # Terraform Apply
+    # ========================================================================
+    - name: Apply Terraform (create infrastructure)
+      community.general.terraform:
+        project_path: "{{ playbook_dir }}/terraform"
+        state: present
+        variables:
+          aws_name_tag: "{{ aws_name_tag }}"
+          aws_instance_size: "{{ aws_instance_size }}"
+          aws_instance_count: "{{ aws_instance_count | default(1) }}"
+          aws_instance_public_key: "{{ aws_instance_public_key }}"
+          aws_region: "{{ aws_region }}"
+          aws_server_role: "{{ aws_server_role }}"
+          aws_server_group: "{{ aws_server_group }}"
+      register: terraform_output
+
+    # ========================================================================
+    # Parse Terraform outputs
+    # ========================================================================
+    - name: Build server list from Terraform output
+      ansible.builtin.set_fact:
+        server_list: "{{ terraform_output.outputs.server_info.value }}"
+
+    # ========================================================================
+    # Wait for SSH availability
+    # ========================================================================
+    - name: Aguardar SSH ficar disponível
+      ansible.builtin.wait_for:
+        host: "{{ item.public_ip }}"
+        port: 22
+        delay: 15
+        timeout: 300
+        state: started
+      loop: "{{ server_list }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    # ========================================================================
+    # Provisioning summary
+    # ========================================================================
+    - name: Resumo do provisionamento
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════╗
+          ║  PROVISIONAMENTO CONCLUÍDO                           ║
+          ╠══════════════════════════════════════════════════════╣
+          {% for srv in server_list %}
+          ║  {{ srv.name }}:
+          ║    Public IP:  {{ srv.public_ip }}
+          ║    Private IP: {{ srv.private_ip }}
+          ║    ID:         {{ srv.instance_id }}
+          ║    Tipo:       {{ srv.instance_type }}
+          ║    Role:       {{ srv.role }}
+          ║    Group:      {{ srv.group }}
+          {% endfor %}
+          ╚══════════════════════════════════════════════════════╝
+
+    # ========================================================================
+    # Export data for AAP workflow downstream jobs
+    # ========================================================================
+    - name: Export provisioning data for downstream job templates
+      ansible.builtin.set_stats:
+        data:
+          server_list: "{{ server_list }}"
+          public_ips: "{{ terraform_output.outputs.public_ips.value }}"
+          aws_name_tag: "{{ aws_name_tag }}"
+          aws_server_role: "{{ aws_server_role }}"
+          aws_server_group: "{{ aws_server_group }}"
