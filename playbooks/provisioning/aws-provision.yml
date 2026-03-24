@@ -53,19 +53,20 @@
 
   tasks:
     # ========================================================================
-    # Terraform Init with S3 backend
+    # Terraform Init (isolated — no plan/apply, just backend setup)
     # ========================================================================
     - name: Initialize Terraform with S3 backend
-      community.general.terraform:
-        project_path: "{{ playbook_dir }}/terraform"
-        state: present
-        force_init: true
-        backend_config:
-          bucket: "{{ s3_backend_bucket }}"
-          key: "{{ s3_backend_key }}"
-          region: "{{ s3_backend_region }}"
-          dynamodb_table: "{{ dynamodb_lock_table }}"
-          encrypt: "true"
+      ansible.builtin.command:
+        cmd: >-
+          terraform init -reconfigure -input=false
+          -backend-config="bucket={{ s3_backend_bucket }}"
+          -backend-config="key={{ s3_backend_key }}"
+          -backend-config="region={{ s3_backend_region }}"
+          -backend-config="dynamodb_table={{ dynamodb_lock_table }}"
+          -backend-config="encrypt=true"
+        chdir: "{{ playbook_dir }}/terraform"
+      register: terraform_init
+      changed_when: "'Terraform has been successfully initialized' in terraform_init.stdout"
 
     # ========================================================================
     # Terraform Apply
