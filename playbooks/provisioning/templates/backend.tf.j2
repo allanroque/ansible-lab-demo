@@ -1,9 +1,9 @@
-{% if terraform_backend | default(false) %}
 terraform {
   backend "s3" {
-    bucket = "{{ terraform_state_bucket }}"
-    key    = "{{ project_name }}/terraform.tfstate"
-    region = "{{ aws_region }}"
+    bucket         = "{{ s3_backend_bucket }}"
+    key            = "{{ s3_backend_key }}"
+    region         = "{{ s3_backend_region }}"
+    dynamodb_table = "{{ dynamodb_lock_table }}"
+    encrypt        = true
   }
 }
-{% endif %}

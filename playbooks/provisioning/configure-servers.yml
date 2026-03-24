@@ -1,9 +1,9 @@
 ---
 # =============================================================================
-# AIOps Lab - Configurar Servidores por Role
+# AIOps Lab - Configurar Servidor por Role
 # =============================================================================
-# Executa após provisionamento. Configura cada servidor baseado no seu role.
-# Pode ser executado standalone contra hosts existentes.
+# Executa após provisionamento. Configura o servidor baseado no seu role.
+# Pode ser executado standalone contra host existente.
 #
 # Uso:
 #   ansible-playbook configure-servers.yml -i inventory
@@ -11,7 +11,7 @@
 # =============================================================================
 
 # --- Webservers: Apache + Firewall ---
-- name: Configurar Webservers (Apache)
+- name: Configurar Webserver (Apache)
   hosts: webservers
   become: true
   gather_facts: true
@@ -75,7 +75,7 @@
       ansible.builtin.debug:
         msg: "Apache OK em {{ inventory_hostname }} (HTTP {{ apache_check.status }})"
 
-# --- Todos os servidores: Node Exporter ---
+# --- Node Exporter ---
 - name: Instalar Node Exporter (monitoramento)
   hosts: provisioned_servers
   become: true
@@ -168,7 +168,7 @@
       ansible.builtin.debug:
         msg: "Node Exporter OK em {{ inventory_hostname }} (HTTP {{ ne_check.status }})"
 
-# --- Todos os servidores: Promtail ---
+# --- Promtail ---
 - name: Instalar Promtail (coleta de logs)
   hosts: provisioned_servers
   become: true

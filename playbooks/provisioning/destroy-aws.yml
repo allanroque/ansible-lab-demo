@@ -1,12 +1,9 @@
 ---
 # =============================================================================
-# AIOps Lab - Destruir Infraestrutura AWS
+# AIOps Lab - Destruir Servidores AWS
 # =============================================================================
-# Executa terraform destroy e limpa tudo.
-#
 # Uso:
-#   ansible-playbook destroy-aws.yml -e @vars/defaults.yml
-#   ansible-playbook destroy-aws.yml -e "project_name=aiops-lab"
+#   ansible-playbook destroy-aws.yml -e "aws_name_tag=ansible"
 # =============================================================================
 
 - name: Destruir infraestrutura AWS
@@ -24,9 +21,9 @@
           ╔══════════════════════════════════════════════════════╗
           ║  ATENÇÃO: DESTRUINDO INFRAESTRUTURA                  ║
           ╠══════════════════════════════════════════════════════╣
-          ║  Projeto:  {{ project_name }}
-          ║  Região:   {{ aws_region }}
-          ║  Diretório: {{ terraform_project_dir }}
+          ║  Name Tag:  {{ aws_name_tag }}
+          ║  Região:    {{ aws_region }}
+          ║  Backend:   s3://{{ s3_backend_bucket }}/{{ s3_backend_key }}
           ╚══════════════════════════════════════════════════════╝
 
     - name: Verificar diretório Terraform
@@ -41,27 +38,6 @@
           Nada para destruir.
       when: not tf_dir.stat.exists
 
-    - name: Verificar se existe state file
-      ansible.builtin.stat:
-        path: "{{ terraform_project_dir }}/terraform.tfstate"
-      register: tf_state
-
-    - name: Aviso se não existe state
-      ansible.builtin.debug:
-        msg: "Nenhum terraform.tfstate encontrado. Pode não haver recursos para destruir."
-      when: not tf_state.stat.exists
-
-    # ---- Ler chave SSH (necessária para Terraform) ----
-    - name: Ler chave SSH pública
-      ansible.builtin.slurp:
-        src: "{{ ssh_public_key_file }}"
-      register: ssh_pub_key_content
-
-    - name: Definir chave SSH
-      ansible.builtin.set_fact:
-        ssh_public_key: "{{ ssh_pub_key_content.content | b64decode | trim }}"
-
-    # ---- Destruir ----
     - name: Executar terraform destroy
       community.general.terraform:
         project_path: "{{ terraform_project_dir }}"
@@ -69,19 +45,21 @@
         binary_path: "{{ terraform_binary | default(omit) }}"
         variables:
           aws_region: "{{ aws_region }}"
-          project_name: "{{ project_name }}"
-          environment: "{{ environment }}"
-          ssh_public_key: "{{ ssh_public_key }}"
+          aws_name_tag: "{{ aws_name_tag }}"
+          aws_instance_size: "{{ aws_instance_size }}"
+          aws_instance_count: "{{ aws_instance_count }}"
+          aws_instance_public_key: "{{ aws_instance_public_key }}"
+          server_role: "{{ server_role | default('') }}"
+          server_group: "{{ server_group | default('') }}"
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
       register: destroy_result
 
-    - name: Exibir resultado da destruição
+    - name: Exibir resultado
       ansible.builtin.debug:
         var: destroy_result
 
-    # ---- Limpeza opcional ----
     - name: Remover diretório Terraform local
       ansible.builtin.file:
         path: "{{ terraform_project_dir }}"
@@ -94,6 +72,6 @@
           ╔══════════════════════════════════════════════════════╗
           ║  INFRAESTRUTURA DESTRUÍDA                            ║
           ╠══════════════════════════════════════════════════════╣
-          ║  Projeto: {{ project_name }}
-          ║  Todos os recursos AWS foram removidos.
+          ║  Name Tag: {{ aws_name_tag }}
+          ║  Recursos AWS removidos.
           ╚══════════════════════════════════════════════════════╝
