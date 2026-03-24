@@ -1,0 +1,73 @@
+---
+# ============================================================================
+# Playbook: aws-destroy.yml
+# Destroys AWS infrastructure previously created by aws-provision.yml
+# Requires the same aws_name_tag used during provisioning
+# ============================================================================
+- name: Destroy AWS infrastructure with Terraform
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars/aws.yml
+
+  pre_tasks:
+    - name: Validate required variables for destroy
+      ansible.builtin.assert:
+        that:
+          - aws_name_tag is defined and aws_name_tag | length > 0
+          - aws_region is defined
+        fail_msg: >-
+          Missing aws_name_tag or aws_region. These are needed to locate
+          the correct Terraform state in S3.
+
+    - name: Get AWS account ID for backend naming
+      amazon.aws.aws_caller_info:
+      register: caller_info
+
+    - name: Set S3 backend resource names
+      ansible.builtin.set_fact:
+        s3_backend_bucket: >-
+          {{ s3_backend_bucket | default('terraform-state-' + aws_name_tag + '-' + caller_info.account) }}
+        dynamodb_lock_table: >-
+          {{ dynamodb_lock_table | default('terraform-lock-' + aws_name_tag + '-' + caller_info.account) }}
+
+  tasks:
+    # ========================================================================
+    # Terraform Init (backend setup only)
+    # ========================================================================
+    - name: Initialize Terraform with S3 backend
+      ansible.builtin.command:
+        cmd: >-
+          terraform init -reconfigure -input=false
+          -backend-config="bucket={{ s3_backend_bucket }}"
+          -backend-config="key={{ s3_backend_key }}"
+          -backend-config="region={{ s3_backend_region }}"
+          -backend-config="dynamodb_table={{ dynamodb_lock_table }}"
+          -backend-config="encrypt=true"
+        chdir: "{{ playbook_dir }}/terraform"
+      register: terraform_init
+      changed_when: "'Terraform has been successfully initialized' in terraform_init.stdout"
+
+    # ========================================================================
+    # Terraform Destroy
+    # ========================================================================
+    - name: Destroy Terraform resources
+      ansible.builtin.command:
+        cmd: >-
+          terraform destroy -auto-approve -input=false -no-color
+        chdir: "{{ playbook_dir }}/terraform"
+      register: terraform_destroy
+      changed_when: "'Destroy complete' in terraform_destroy.stdout"
+
+    - name: Resumo da destruição
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════╗
+          ║  INFRAESTRUTURA DESTRUÍDA                            ║
+          ╠══════════════════════════════════════════════════════╣
+          ║  Name Tag:  {{ aws_name_tag }}
+          ║  Region:    {{ aws_region }}
+          ║  State:     s3://{{ s3_backend_bucket }}/{{ s3_backend_key }}
+          ╚══════════════════════════════════════════════════════╝
