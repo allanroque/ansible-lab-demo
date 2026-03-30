@@ -35,7 +35,8 @@
 
   tasks:
     # ========================================================================
-    # Terraform Init (backend setup only)
+    # Terraform Init (backend setup only — no Ansible module for init with
+    # dynamic backend-config, so command is required here)
     # ========================================================================
     - name: Initialize Terraform with S3 backend
       ansible.builtin.command:
@@ -51,15 +52,21 @@
       changed_when: "'Terraform has been successfully initialized' in terraform_init.stdout"
 
     # ========================================================================
-    # Terraform Destroy
+    # Terraform Destroy (using community.general.terraform module)
     # ========================================================================
-    - name: Destroy Terraform resources
-      ansible.builtin.command:
-        cmd: >-
-          terraform destroy -auto-approve -input=false -no-color
-        chdir: "{{ playbook_dir }}/terraform"
+    - name: Destroy Terraform-managed resources
+      community.general.terraform:
+        project_path: "{{ playbook_dir }}/terraform"
+        state: absent
+        variables:
+          aws_name_tag: "{{ aws_name_tag }}"
+          aws_instance_size: "{{ aws_instance_size | default('t2.micro') }}"
+          aws_instance_count: "{{ aws_instance_count | default(1) }}"
+          aws_instance_public_key: "{{ aws_instance_public_key | default('unused') }}"
+          aws_region: "{{ aws_region }}"
+          aws_server_role: "{{ aws_server_role | default('webserver') }}"
+          aws_server_group: "{{ aws_server_group | default('webservers') }}"
       register: terraform_destroy
-      changed_when: "'Destroy complete' in terraform_destroy.stdout"
 
     - name: Resumo da destruição
       ansible.builtin.debug:
